@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ecommerce-ai-agent-demo
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_API_KEY
+        sync: false

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>电商运营 AI Agent MVP</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="home-page">
+  <nav class="home-nav">
+    <a class="home-brand" href="/" aria-label="电商运营 AI Agent MVP 首页">
+      <svg width="26" height="26" viewBox="0 0 256 256" fill="#ffffff" aria-hidden="true">
+        <path d="M 256 256 L 128 256 L 0 128 L 128 128 Z M 256 128 L 128 128 L 0 0 L 128 0 Z"></path>
+      </svg>
+      <span>电商运营 AI Agent</span>
+    </a>
+
+    <div class="home-nav-pill" aria-label="首页导航">
+      <a class="active" href="/">首页</a>
+      <a href="/agent">智能体工作台</a>
+      <a href="/agent">客服售后</a>
+      <a href="/agent">商品上架</a>
+      <a href="/agent">广告优化</a>
+    </div>
+
+    <a class="home-signup" href="/agent">进入 Demo</a>
+    <a class="home-menu" href="/agent" aria-label="进入 Demo">
+      <span></span>
+      <span></span>
+    </a>
+  </nav>
+
+  <main class="home-root" style="font-family: 'Inter', sans-serif;">
+    <section class="home-hero" aria-label="电商运营 AI Agent MVP 首页">
+      <div class="home-base-image hero-zoom" aria-hidden="true"></div>
+      <canvas id="spotlightCanvas" class="spotlight-canvas" aria-hidden="true"></canvas>
+      <div id="revealLayer" class="home-reveal-layer" aria-hidden="true"></div>
+      <div class="home-vignette" aria-hidden="true"></div>
+
+      <header class="home-heading">
+        <h1>
+          <span class="font-playfair hero-anim hero-reveal home-title-line accent" style="animation-delay: 0.25s;">电商运营</span>
+          <span class="hero-anim hero-reveal home-title-line" style="animation-delay: 0.42s;">AI Agent MVP</span>
+        </h1>
+      </header>
+
+      <div class="home-copy-left hero-anim hero-fade" style="animation-delay: 0.7s;">
+        <p>把客服售后、商品上架、广告投放和数据复盘串成一个可演示的 AI 业务闭环。</p>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="/home.js"></script>
+</body>
+</html>
