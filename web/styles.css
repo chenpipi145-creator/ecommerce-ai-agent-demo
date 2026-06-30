@@ -295,6 +295,18 @@ label {
   cursor: wait;
 }
 
+.secondary-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eef6ff;
+  color: #1d4ed8;
+  font-weight: 850;
+  cursor: pointer;
+}
+
 .hint-box {
   margin-top: 16px;
   padding: 14px;
@@ -619,8 +631,68 @@ label {
   color: var(--red);
 }
 
+.security-note {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.security-note.inline {
+  margin-top: 0;
+}
+
+.security-note strong {
+  color: #c2410c;
+}
+
 .account-grid {
   grid-template-columns: 360px minmax(0, 1fr) 330px;
+}
+
+.status-panel {
+  margin-top: 18px;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.status-card {
+  min-height: 90px;
+  padding: 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+}
+
+.status-card.danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.status-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.status-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.35;
 }
 
 body.home-page {
@@ -859,6 +931,39 @@ body.home-page {
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
+.home-cta-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.home-ghost-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.home-ghost-cta:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.03);
+}
+
+.home-proof {
+  display: grid;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .home-cta:hover {
   background: #d2611f;
   box-shadow: 0 14px 34px rgba(232, 112, 42, 0.3);
@@ -969,7 +1074,8 @@ body.home-page {
 
   .report-sections,
   .score-grid,
-  .metric-strip {
+  .metric-strip,
+  .status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1032,7 +1138,8 @@ body.home-page {
   .agent-strip,
   .report-sections,
   .score-grid,
-  .metric-strip {
+  .metric-strip,
+  .status-grid {
     grid-template-columns: 1fr;
   }
 

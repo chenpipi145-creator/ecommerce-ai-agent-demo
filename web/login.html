@@ -13,7 +13,7 @@
       <div class="auth-copy">
         <div class="eyebrow">商家工作区</div>
         <h1>登录后管理自己的店铺和 Agent 记录</h1>
-        <p>当前版本已支持账号、角色、店铺绑定占位、token 加密保存和按商家隔离运行记录。真实平台 API 会在后续接入。</p>
+        <p>当前版本已支持账号、角色、演示店铺、token 加密保存、按商家隔离运行记录和人工复核任务。真实平台 OAuth 会在后续接入。</p>
       </div>
 
       <div class="auth-card">
@@ -21,6 +21,7 @@
           <button class="active" data-auth-tab="login">登录</button>
           <button data-auth-tab="register">注册</button>
         </div>
+        <button class="secondary-btn" id="demoLoginBtn" type="button">不用注册，直接体验演示店铺</button>
 
         <form id="loginForm" class="auth-form">
           <label>
@@ -58,6 +59,11 @@
           </label>
           <button class="primary-btn" type="submit">创建账号</button>
         </form>
+
+        <div class="security-note">
+          <strong>安全说明</strong>
+          <span>店铺 token 会加密保存；当前 IP 访问仍是 HTTP，正式接真实店铺 API 前必须绑定域名并启用 HTTPS。</span>
+        </div>
 
         <div id="authMessage" class="form-message"></div>
       </div>

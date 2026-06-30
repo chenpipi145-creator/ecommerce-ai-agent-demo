@@ -40,12 +40,19 @@
       </div>
     </section>
 
+    <section class="panel status-panel">
+      <div class="panel-head compact">
+        <h2>系统上线状态</h2>
+      </div>
+      <div class="status-grid" id="statusGrid"></div>
+    </section>
+
     <section class="dashboard-grid account-grid">
       <aside class="panel">
         <div class="panel-head">
           <div>
             <h2>添加店铺授权</h2>
-            <p>先保存平台和 token 占位。真实授权流程需要对应平台开放接口和回调地址。</p>
+            <p>先保存平台和 token 占位。正式版会改成平台 OAuth 授权，不要求商家手动粘 token。</p>
           </div>
         </div>
         <form id="shopForm" class="stack-form">
@@ -67,6 +74,10 @@
             API Token / 授权码
             <textarea name="api_token" rows="4" placeholder="真实平台接入时粘贴授权 token；当前会加密保存"></textarea>
           </label>
+          <div class="security-note inline">
+            <strong>上线前要求</strong>
+            <span>接真实店铺 API 前必须启用 HTTPS、平台 OAuth 回调和操作审批。</span>
+          </div>
           <button class="primary-btn" type="submit">保存店铺</button>
         </form>
         <div id="shopMessage" class="form-message"></div>
@@ -103,6 +114,13 @@
         <h2>Agent 运行记录</h2>
       </div>
       <div id="runList" class="action-list"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head compact">
+        <h2>待人工复核</h2>
+      </div>
+      <div id="approvalList" class="action-list"></div>
     </section>
   </main>
   <script src="/dashboard.js"></script>

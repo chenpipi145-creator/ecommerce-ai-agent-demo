@@ -23,6 +23,14 @@ DB_PATH = Path(os.getenv("DB_PATH", DATA_DIR / "ecommerce_agent.db"))
 APP_SECRET = os.getenv("APP_SECRET") or os.getenv("GROQ_API_KEY") or "dev-secret-change-me"
 SESSION_MAX_AGE = 60 * 60 * 24 * 7
 
+ROLE_ALLOWED_INTENTS = {
+    "owner": None,
+    "admin": None,
+    "operator": {"listing_audit", "listing_generation", "conversion_agent", "product_selection", "data_optimization", "marketing", "business_consulting"},
+    "customer_service": {"after_sales", "logistics", "order_query", "business_consulting"},
+    "media_buyer": {"promotion_plan", "conversion_agent", "data_optimization", "product_selection", "business_consulting"},
+}
+
 
 def now_ts():
     return int(time.time())
@@ -166,6 +174,21 @@ def create_user(email, password, name, role="owner"):
         )
 
 
+def ensure_demo_shop(user_id):
+    with db_connect() as conn:
+        row = conn.execute(
+            "SELECT id FROM shops WHERE user_id = ? AND platform = ?",
+            (user_id, "demo"),
+        ).fetchone()
+        if row:
+            return row["id"]
+        conn.execute(
+            "INSERT INTO shops(user_id, platform, shop_name, status, created_at) VALUES (?, ?, ?, ?, ?)",
+            (user_id, "demo", "演示店铺（样例数据）", "demo_ready", now_ts()),
+        )
+        return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+
 def get_user_by_id(user_id):
     with db_connect() as conn:
         return row_to_dict(conn.execute("SELECT id, email, name, role, created_at FROM users WHERE id = ?", (user_id,)).fetchone())
@@ -244,6 +267,20 @@ def create_shop(user_id, platform, shop_name, api_token=""):
     return {"id": shop_id, "platform": platform, "shop_name": shop_name, "status": "token_saved" if api_token else "pending"}
 
 
+def can_run_intent(user, intent):
+    allowed = ROLE_ALLOWED_INTENTS.get(user.get("role"), set())
+    return allowed is None or intent in allowed
+
+
+def role_permission_message(role):
+    names = {
+        "operator": "运营账号只能运行商品、推广成交、选品和复盘类 Agent。",
+        "customer_service": "客服账号只能运行售后、物流和订单类 Agent。",
+        "media_buyer": "投手账号只能运行广告、推广成交和数据复盘类 Agent。",
+    }
+    return names.get(role, "当前角色无权运行该 Agent。")
+
+
 def list_agent_runs(user_id, limit=20):
     with db_connect() as conn:
         rows = conn.execute(
@@ -257,6 +294,47 @@ def list_agent_runs(user_id, limit=20):
             (user_id, limit),
         ).fetchall()
         return [dict(row) for row in rows]
+
+
+def list_approval_tasks(user_id, limit=20):
+    with db_connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, shop_id, title, risk_level, status, created_at
+            FROM approval_tasks
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (user_id, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
+def save_approval_task(user_id, shop_id, title, risk_level, payload):
+    with db_connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO approval_tasks(user_id, shop_id, title, risk_level, status, payload_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (user_id, shop_id, title, risk_level, "pending", json.dumps(payload, ensure_ascii=False), now_ts()),
+        )
+
+
+def maybe_create_approval_task(user_id, shop_id, message, answer):
+    risks = answer.get("risk_notes") or []
+    actions = answer.get("action_plan") or []
+    intent = answer.get("intent", "Agent 操作")
+    high_signal = any("人工" in str(item) or "风险" in str(item) or "token" in str(item).lower() for item in risks + actions)
+    if answer.get("mode") != "groq" or high_signal or "成交" in intent or "售后" in intent:
+        save_approval_task(
+            user_id,
+            shop_id,
+            f"{intent} 待人工复核",
+            "high" if high_signal else "medium",
+            {"message": message, "summary": answer.get("summary"), "mode": answer.get("mode")},
+        )
 
 
 def save_agent_run(user_id, shop_id, message, answer):
@@ -1697,6 +1775,28 @@ class DemoHandler(BaseHTTPRequestHandler):
                 return
             self._send_json({"runs": list_agent_runs(user["id"])})
             return
+        if parsed_path == "/api/approval-tasks":
+            user = self._require_user()
+            if not user:
+                return
+            self._send_json({"tasks": list_approval_tasks(user["id"])})
+            return
+        if parsed_path == "/api/system-status":
+            user = self._require_user()
+            if not user:
+                return
+            proto = self.headers.get("X-Forwarded-Proto", "http")
+            self._send_json(
+                {
+                    "https": proto == "https",
+                    "groq_configured": bool(os.getenv("GROQ_API_KEY")),
+                    "database": "sqlite",
+                    "oauth": "占位，未接入真实平台 OAuth",
+                    "token_storage": "已加密保存 token 字段",
+                    "approval": "高风险与模拟模式结果会生成待复核任务",
+                }
+            )
+            return
         if parsed_path == "/api/demo-data":
             self._send_json({"orders": ORDERS, "products": PRODUCTS, "knowledge": KNOWLEDGE_BASE})
             return
@@ -1722,6 +1822,7 @@ class DemoHandler(BaseHTTPRequestHandler):
                     self._send_json({"error": "密码至少 8 位"}, 400)
                     return
                 user = create_user(email, password, name, role)
+                ensure_demo_shop(user["id"])
                 token, expires_at = create_session(user["id"])
                 self._send_json({"user": user}, headers={"Set-Cookie": self._session_cookie(token, expires_at)})
             except sqlite3.IntegrityError:
@@ -1743,6 +1844,18 @@ class DemoHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "邮箱或密码错误"}, 401)
                 return
             user = get_user_by_id(user_row["id"])
+            token, expires_at = create_session(user["id"])
+            self._send_json({"user": user}, headers={"Set-Cookie": self._session_cookie(token, expires_at)})
+            return
+
+        if parsed_path == "/api/demo-login":
+            demo_email = "demo@ecommerce-agent.local"
+            user_row = get_user_by_email(demo_email)
+            if not user_row:
+                user = create_user(demo_email, "DemoPass123", "演示商家", "owner")
+            else:
+                user = get_user_by_id(user_row["id"])
+            ensure_demo_shop(user["id"])
             token, expires_at = create_session(user["id"])
             self._send_json({"user": user}, headers={"Set-Cookie": self._session_cookie(token, expires_at)})
             return
@@ -1785,6 +1898,10 @@ class DemoHandler(BaseHTTPRequestHandler):
         if not message:
             self._send_json({"error": "请输入业务问题"}, 400)
             return
+        intent = detect_intent(message)
+        if not can_run_intent(user, intent):
+            self._send_json({"error": role_permission_message(user["role"]), "intent": intent}, 403)
+            return
         shop_id = payload.get("shop_id")
         try:
             shop_id = int(shop_id) if shop_id else None
@@ -1798,6 +1915,7 @@ class DemoHandler(BaseHTTPRequestHandler):
             "data_scope": "当前版本已按登录用户保存运行记录；真实店铺 API 接入后会按 user_id/shop_id 隔离数据。",
         }
         save_agent_run(user["id"], shop_id, message, answer)
+        maybe_create_approval_task(user["id"], shop_id, message, answer)
         self._send_json(answer)
 
     def log_message(self, format, *args):

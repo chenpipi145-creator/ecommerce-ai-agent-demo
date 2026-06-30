@@ -5,6 +5,8 @@ const runMetric = document.querySelector("#runMetric");
 const shopForm = document.querySelector("#shopForm");
 const shopList = document.querySelector("#shopList");
 const runList = document.querySelector("#runList");
+const approvalList = document.querySelector("#approvalList");
+const statusGrid = document.querySelector("#statusGrid");
 const shopMessage = document.querySelector("#shopMessage");
 const logoutBtn = document.querySelector("#logoutBtn");
 
@@ -74,6 +76,46 @@ function renderRuns(runs = []) {
     .join("");
 }
 
+function renderApprovals(tasks = []) {
+  if (!tasks.length) {
+    approvalList.innerHTML = `<div class="empty">暂无待复核任务。高风险售后、成交动作或模拟模式结果会在这里沉淀。</div>`;
+    return;
+  }
+  approvalList.innerHTML = tasks
+    .map((task) => {
+      const date = new Date((task.created_at || 0) * 1000).toLocaleString();
+      return `
+        <div class="action-row">
+          <div class="priority">${escapeHtml(task.risk_level || "medium")}</div>
+          <div>
+            <strong>${escapeHtml(task.title)}</strong>
+            <span>${escapeHtml(task.status)} · ${escapeHtml(date)}</span>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderStatus(status) {
+  const items = [
+    ["HTTPS", status.https ? "已启用" : "未启用", status.https ? "好" : "风险"],
+    ["Groq", status.groq_configured ? "已配置" : "未配置", status.groq_configured ? "好" : "风险"],
+    ["数据库", status.database || "-", "一般"],
+    ["平台 OAuth", status.oauth || "-", "风险"],
+    ["Token", status.token_storage || "-", "一般"],
+    ["人工复核", status.approval || "-", "好"],
+  ];
+  statusGrid.innerHTML = items
+    .map(([label, value, state]) => `
+      <div class="status-card ${state === "风险" ? "danger" : ""}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+    `)
+    .join("");
+}
+
 async function loadDashboard() {
   const me = await fetchJson("/api/me");
   if (!me.user) {
@@ -83,8 +125,14 @@ async function loadDashboard() {
   userPill.textContent = `${me.user.name} · ${roleNames[me.user.role] || me.user.role}`;
   roleMetric.textContent = roleNames[me.user.role] || me.user.role;
   renderShops(me.shops || []);
-  const runs = await fetchJson("/api/agent-runs");
+  const [runs, approvals, status] = await Promise.all([
+    fetchJson("/api/agent-runs"),
+    fetchJson("/api/approval-tasks"),
+    fetchJson("/api/system-status"),
+  ]);
   renderRuns(runs.runs || []);
+  renderApprovals(approvals.tasks || []);
+  renderStatus(status);
 }
 
 shopForm.addEventListener("submit", async (event) => {

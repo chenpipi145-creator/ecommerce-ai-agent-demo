@@ -2,6 +2,7 @@ const tabs = document.querySelectorAll("[data-auth-tab]");
 const loginForm = document.querySelector("#loginForm");
 const registerForm = document.querySelector("#registerForm");
 const messageBox = document.querySelector("#authMessage");
+const demoLoginBtn = document.querySelector("#demoLoginBtn");
 
 function showMessage(text, danger = false) {
   messageBox.textContent = text;
@@ -50,6 +51,16 @@ registerForm.addEventListener("submit", async (event) => {
   showMessage("正在创建账号...");
   try {
     await postJson("/api/register", formData(registerForm));
+    location.href = "/dashboard";
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+});
+
+demoLoginBtn.addEventListener("click", async () => {
+  showMessage("正在进入演示店铺...");
+  try {
+    await postJson("/api/demo-login", {});
     location.href = "/dashboard";
   } catch (error) {
     showMessage(error.message, true);
