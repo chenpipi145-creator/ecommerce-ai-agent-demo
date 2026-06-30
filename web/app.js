@@ -12,6 +12,7 @@ const scoreList = document.querySelector("#scoreList");
 const actionList = document.querySelector("#actionList");
 const accountPill = document.querySelector("#accountPill");
 const shopSelect = document.querySelector("#shopSelect");
+const quickPromptButtons = document.querySelectorAll(".quick-prompts [data-prompt]");
 const productSelect = document.querySelector("#productSelect");
 const channelSelect = document.querySelector("#channelSelect");
 const goalSelect = document.querySelector("#goalSelect");
@@ -243,8 +244,17 @@ async function loadAccount() {
   }
 }
 
+function setActivePromptButton(activeButton) {
+  quickPromptButtons.forEach((button) => {
+    button.classList.toggle("is-active", button === activeButton);
+  });
+}
+
 document.querySelectorAll("[data-prompt]").forEach((button) => {
   button.addEventListener("click", () => {
+    if (button.closest(".quick-prompts")) {
+      setActivePromptButton(button);
+    }
     input.value = button.dataset.prompt;
     runAgent();
   });

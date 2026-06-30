@@ -1566,7 +1566,7 @@ body.home-page {
   padding: 14px 16px;
 }
 
-.quick-prompts button.featured {
+.quick-prompts button.is-active {
   background: #172033;
   color: #ffffff;
 }
