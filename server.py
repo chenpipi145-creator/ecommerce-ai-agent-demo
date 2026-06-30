@@ -3,6 +3,7 @@ import os
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -48,6 +49,13 @@ KNOWLEDGE_BASE = [
         "category": "推广",
         "content": "直通车适合关键词竞价和精准搜索流量；引力魔方适合推荐场景和人群扩量；淘宝客适合按成交付费冲销量；万相台适合智能投放和多目标优化。投放前要明确目标是测款、拉新、冲量还是利润。",
         "keywords": ["直通车", "引力魔方", "淘宝客", "万相台", "推广", "投放", "引流"],
+    },
+    {
+        "id": "conversion_landing_page",
+        "title": "单品推广成交页规则",
+        "category": "推广成交",
+        "content": "单品推广页要围绕目标人群、核心痛点、商品卖点、信任背书、优惠权益和明确 CTA 组织内容。不同渠道文案要区分抖音、小红书、朋友圈和私域，不要只堆卖点，要把用户为什么现在买讲清楚。",
+        "keywords": ["推广页", "成交", "落地页", "CTA", "抖音", "小红书", "朋友圈", "私域", "优惠券", "卖货"],
     },
     {
         "id": "data_optimization",
@@ -258,6 +266,7 @@ def rag_search(query, limit=4):
 
 def detect_intent(message):
     rules = [
+        ("conversion_agent", ["推广成交", "推广页", "落地页", "卖出去", "成交", "加微信", "朋友圈", "小红书", "抖音", "购买按钮", "单品推广", "渠道素材"]),
         ("listing_generation", ["生成上架", "自动上架", "发布商品", "商品标题", "详情页", "主图", "视频脚本", "卖点", "文案", "SKU"]),
         ("listing_audit", ["上架检查", "上架体检", "审核", "资质", "完整性", "合规", "检查商品", "体检"]),
         ("promotion_plan", ["推广", "投放", "直通车", "引力魔方", "淘宝客", "万相台", "引流", "预算", "放量"]),
@@ -424,6 +433,72 @@ def plan_promotion(product_id):
             "主图 A/B 测试：卖点版 vs 场景版",
             "短视频首 3 秒强化痛点",
             "详情页首屏增加价格权益和售后承诺",
+        ],
+    }
+
+
+def generate_conversion_package(product_id):
+    product = PRODUCTS.get(product_id)
+    if not product:
+        return {"status": "not_found", "message": f"未找到商品 {product_id}"}
+
+    first_audience = product["target_audience"][0]
+    core_points = "、".join(product["selling_points"][:3])
+    cta = "立即购买" if product["stock"] >= 500 else "先领券锁定库存"
+    coupon = 20 if product["price"] >= 169 else 10
+    channel_angle = {
+        "抖音": f"3 秒展示{first_audience}的真实痛点，随后用使用场景证明{core_points}。",
+        "小红书": f"用体验笔记结构写种草内容：问题、尝试、变化、购买建议，弱化硬广感。",
+        "朋友圈": f"用熟人信任表达，先讲场景和优惠，再给购买入口或加微信咨询。",
+        "私域社群": f"用限时权益和库存提醒推动转化，客服跟进未下单用户的疑虑。",
+    }
+
+    return {
+        "agent": "推广成交 Agent",
+        "product_id": product_id,
+        "product_name": product["name"],
+        "commercial_goal": "把商品卖出去，而不是只生成运营建议",
+        "target_audience": product["target_audience"],
+        "core_selling_points": product["selling_points"],
+        "promotion_titles": [
+            f"{product['name']}：{product['selling_points'][0]}，适合{first_audience}",
+            f"{first_audience}可以重点看这款{product['category'].split('/')[-1].strip()}",
+            f"{product['brand']}{product['name']}限时领券，先解决{product['selling_points'][1]}需求",
+        ],
+        "pain_point_talk": [
+            f"{first_audience}最怕买回去不适合，所以首屏先讲适用场景和退换承诺。",
+            f"用户不是只看参数，而是在判断{core_points}能不能解决自己的问题。",
+            "成交话术要把价格、发货、售后和使用效果一次讲清，减少反复咨询。",
+        ],
+        "landing_page_structure": [
+            "首屏：商品名 + 一句话利益点 + 价格权益 + 购买按钮",
+            "第二屏：目标人群痛点和使用前后对比",
+            "第三屏：3 个核心卖点，用图文或短视频截图承接",
+            "第四屏：参数、SKU、适用场景和常见疑虑",
+            "第五屏：优惠券、售后承诺、发货时效和二次 CTA",
+        ],
+        "channel_copy": {
+            channel: {
+                "angle": angle,
+                "copy": f"{product['name']}主打{core_points}，适合{first_audience}。现在领 {coupon} 元券，到手价更低，库存 {product['stock']} 件，想要的可以先下单或加微信咨询。",
+            }
+            for channel, angle in channel_angle.items()
+        },
+        "ad_materials": [
+            "主图素材：卖点大字版、真实场景版、优惠权益版各 1 张",
+            "短视频素材：痛点开场、产品展示、使用效果、限时权益四段式",
+            "信息流素材：突出价格权益和售后承诺，避免只展示静态商品图",
+        ],
+        "coupon_strategy": {
+            "coupon": f"{coupon} 元券",
+            "threshold": f"满 {product['price']} 元可用",
+            "reason": "用小额券降低首次下单犹豫，保留毛利空间用于投放测试。",
+        },
+        "cta_buttons": [cta, "领券购买", "加微信咨询", "进入店铺"],
+        "risk_notes": [
+            "避免使用最、第一、治疗、绝对有效等平台高风险词。",
+            "朋友圈和私域可以更强成交，但仍要保留售后承诺和真实库存口径。",
+            "优惠券力度不能只追求点击，要结合毛利率和投放 ROAS 控制利润。",
         ],
     }
 
@@ -709,7 +784,7 @@ def run_tools(intent, message):
     product_id = choose_product_id(message)
     calls = []
 
-    if intent in {"listing_audit", "listing_generation", "promotion_plan", "data_optimization", "marketing"}:
+    if intent in {"listing_audit", "listing_generation", "promotion_plan", "conversion_agent", "data_optimization", "marketing"}:
         calls.append({"name": "get_product_snapshot", "input": {"product_id": product_id}, "output": PRODUCTS.get(product_id)})
 
     if intent == "listing_audit":
@@ -725,6 +800,12 @@ def run_tools(intent, message):
         calls.append({"name": "plan_paid_promotion", "input": {"product_id": product_id}, "output": plan_promotion(product_id)})
         calls.append({"name": "analyze_operations", "input": {"product_id": product_id}, "output": analyze_operations(product_id)})
         calls.append({"name": "run_ad_optimization_agent", "input": {"product_id": product_id}, "output": optimize_ad_agent(product_id)})
+
+    if intent == "conversion_agent":
+        calls.append({"name": "generate_listing_package", "input": {"product_id": product_id}, "output": generate_listing_package(product_id)})
+        calls.append({"name": "generate_conversion_package", "input": {"product_id": product_id}, "output": generate_conversion_package(product_id)})
+        calls.append({"name": "plan_paid_promotion", "input": {"product_id": product_id}, "output": plan_promotion(product_id)})
+        calls.append({"name": "analyze_operations", "input": {"product_id": product_id}, "output": analyze_operations(product_id)})
 
     if intent == "data_optimization":
         calls.append({"name": "analyze_operations", "input": {"product_id": product_id}, "output": analyze_operations(product_id)})
@@ -767,6 +848,7 @@ def fallback_answer(message, intent, docs, tool_calls, reason=None):
         "listing_audit": "商品上架体检",
         "listing_generation": "商品上架方案生成",
         "promotion_plan": "付费推广计划",
+        "conversion_agent": "推广成交方案",
         "data_optimization": "数据监控与优化",
         "product_selection": "选品分析",
         "after_sales": "售后处理",
@@ -835,9 +917,10 @@ def call_groq(message, intent, docs, tool_calls):
                 "role": "system",
                 "content": (
                     "你是资深电商运营智能体，擅长商品上架、标题优化、详情页、SKU定价、付费推广、数据复盘、客服售后。"
-                    "你现在包含三个子 Agent：客服售后 Agent、商品上架 Agent、广告投放/数据优化 Agent。"
+                    "你现在包含四个子 Agent：客服售后 Agent、商品上架 Agent、推广成交 Agent、广告投放/数据优化 Agent。"
                     "客服售后 Agent 要输出问题分类、风险等级、凭证要求、客户话术和内部处理动作。"
                     "商品上架 Agent 要输出审核结论、标题/主图/视频/详情页/SKU方案、合规修复任务和发布检查清单。"
+                    "推广成交 Agent 要输出商品卖点、目标人群、推广标题、落地页结构、抖音/小红书/朋友圈/私域文案、优惠券策略、CTA 和成交风险。"
                     "广告投放/数据优化 Agent 要输出预算策略、关键词出价动作、人群动作、素材测试和监控止损规则。"
                     "你必须使用中文，输出要像运营主管写的执行报告，不要只给普通客服回复。"
                     "你必须严格依据 retrieved_docs 和 tool_calls 的数据，不要编造订单、物流、广告、商品数据。"
@@ -974,6 +1057,33 @@ def enrich_answer(answer, tool_calls):
                     ],
                 }
             )
+        conversion = tool_map.get("generate_conversion_package")
+        if conversion:
+            coupon = conversion.get("coupon_strategy", {})
+            sections.extend(
+                [
+                    {
+                        "title": "推广成交 Agent 结论",
+                        "items": [
+                            f"商品：{conversion.get('product_name')}，目标：{conversion.get('commercial_goal')}",
+                            f"主推人群：{'、'.join(conversion.get('target_audience', [])[:3])}",
+                            f"优惠策略：{coupon.get('coupon')}，{coupon.get('reason')}",
+                        ],
+                    },
+                    {
+                        "title": "单品推广页结构",
+                        "items": conversion.get("landing_page_structure", [])[:5],
+                    },
+                    {
+                        "title": "渠道文案与成交入口",
+                        "items": [
+                            f"{channel}：{payload.get('copy')}"
+                            for channel, payload in list(conversion.get("channel_copy", {}).items())[:4]
+                        ]
+                        + [f"CTA：{' / '.join(conversion.get('cta_buttons', []))}"],
+                    },
+                ]
+            )
         ops = tool_map.get("analyze_operations")
         if ops:
             sections.append(
@@ -1061,6 +1171,7 @@ def enrich_answer(answer, tool_calls):
         customer_agent = tool_map.get("run_customer_service_agent")
         listing_agent = tool_map.get("run_listing_agent")
         ad_agent = tool_map.get("run_ad_optimization_agent")
+        conversion_agent = tool_map.get("generate_conversion_package")
         if audit:
             scorecards.append(
                 {
@@ -1128,6 +1239,30 @@ def enrich_answer(answer, tool_calls):
                     "note": "根据 ROAS、点击率、转化率判断",
                 }
             )
+        if conversion_agent:
+            coupon = conversion_agent.get("coupon_strategy", {})
+            scorecards.extend(
+                [
+                    {
+                        "label": "成交页",
+                        "value": "已生成",
+                        "status": "好",
+                        "note": "包含首屏利益点、痛点、卖点、疑虑和 CTA",
+                    },
+                    {
+                        "label": "渠道素材",
+                        "value": str(len(conversion_agent.get("channel_copy", {}))),
+                        "status": "好",
+                        "note": "覆盖抖音、小红书、朋友圈和私域",
+                    },
+                    {
+                        "label": "优惠策略",
+                        "value": coupon.get("coupon", "-"),
+                        "status": "一般",
+                        "note": "需结合毛利和 ROAS 控制利润",
+                    },
+                ]
+            )
         deduped = []
         seen = set()
         for card in scorecards:
@@ -1135,12 +1270,13 @@ def enrich_answer(answer, tool_calls):
             if key not in seen:
                 deduped.append(card)
                 seen.add(key)
-        answer["scorecards"] = deduped[:6]
+        answer["scorecards"] = deduped[:8 if conversion_agent else 6]
 
     if len(answer.get("action_plan", [])) < 6:
         actions = list(answer.get("action_plan", []))
         audit = tool_map.get("audit_product_listing")
         promotion = tool_map.get("plan_paid_promotion")
+        conversion = tool_map.get("generate_conversion_package")
         ops = tool_map.get("analyze_operations")
         customer_agent = tool_map.get("run_customer_service_agent")
         listing_agent = tool_map.get("run_listing_agent")
@@ -1150,6 +1286,14 @@ def enrich_answer(answer, tool_calls):
                 actions.append({"priority": "P0", "action": fix, "owner": "商品运营", "metric": "上架通过率/转化率"})
         if promotion:
             actions.append({"priority": "P1", "action": "按直通车、引力魔方、万相台拆分预算并做素材测试", "owner": "投手", "metric": "ROAS/点击率"})
+        if conversion:
+            actions.extend(
+                [
+                    {"priority": "P0", "action": "按推广成交 Agent 输出搭建单品推广页首屏和 CTA", "owner": "商品运营", "metric": "落地页转化率"},
+                    {"priority": "P1", "action": "把抖音、小红书、朋友圈和私域文案分别投放测试", "owner": "内容运营", "metric": "点击率/咨询率"},
+                    {"priority": "P1", "action": "上线小额优惠券并追踪毛利、ROAS 和退款率", "owner": "运营", "metric": "成交成本/利润"},
+                ]
+            )
         if ops:
             actions.append({"priority": "P1", "action": "按搜索词、人群、转化三层复盘，连续 7 天记录变化", "owner": "运营", "metric": "转化率/退款率"})
         if customer_agent:
@@ -1162,7 +1306,7 @@ def enrich_answer(answer, tool_calls):
         if ad_agent:
             for item in ad_agent.get("bid_actions", [])[:2]:
                 actions.append({"priority": "P1", "action": f"{item.get('word')}：{item.get('action')}", "owner": "投手", "metric": "ROAS/转化率"})
-        answer["action_plan"] = actions[:6]
+        answer["action_plan"] = actions[:8 if conversion else 6]
 
     return answer
 
@@ -1208,16 +1352,17 @@ class DemoHandler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
     def do_GET(self):
-        if self.path == "/":
+        parsed_path = urllib.parse.urlparse(self.path).path
+        if parsed_path == "/":
             self._send_file(ROOT / "web" / "index.html")
             return
-        if self.path in {"/agent", "/workbench"}:
+        if parsed_path in {"/agent", "/workbench"}:
             self._send_file(ROOT / "web" / "agent.html")
             return
-        if self.path == "/api/demo-data":
+        if parsed_path == "/api/demo-data":
             self._send_json({"orders": ORDERS, "products": PRODUCTS, "knowledge": KNOWLEDGE_BASE})
             return
-        requested = (ROOT / "web" / self.path.lstrip("/")).resolve()
+        requested = (ROOT / "web" / parsed_path.lstrip("/")).resolve()
         if requested.is_file() and ROOT in requested.parents:
             self._send_file(requested)
             return

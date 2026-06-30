@@ -11,10 +11,17 @@ const reportSections = document.querySelector("#reportSections");
 const scoreList = document.querySelector("#scoreList");
 const actionList = document.querySelector("#actionList");
 
+const scenarioPrompts = {
+  after_sales: "订单 E20260601002 的客户反馈便携榨汁杯坏了，想退款或补发。请启动客服售后 Agent，判断问题类型、风险等级、需要什么凭证、怎么回复客户、内部怎么处理。",
+  listing: "请启动商品上架 Agent，给 P2002 做上架前完整处理：资质审核、标题优化、主图视频规划、详情页结构、SKU价格、合规修复任务和发布检查清单。",
+  conversion: "请启动推广成交 Agent，给 P1001 生成一套可直接卖货的单品推广方案：商品卖点、推广标题、落地页结构、抖音/小红书/朋友圈/私域文案、优惠券策略、CTA 按钮和成交风险提醒。",
+  ads: "请启动广告投放/数据优化 Agent，复盘 P1001 的直通车、引力魔方、搜索词、人群和转化数据，给出预算、出价、否定词、素材测试和止损监控规则。",
+};
+
 const defaultTrace = [
   { name: "意图理解", detail: "等待用户输入" },
   { name: "RAG 检索", detail: "等待检索知识库" },
-  { name: "工具执行", detail: "等待调用商品/广告/订单工具" },
+  { name: "工具执行", detail: "等待调用商品/推广/广告/订单工具" },
   { name: "反馈生成", detail: "等待 Groq 输出运营报告" },
 ];
 
@@ -203,3 +210,9 @@ renderNext([], []);
 renderReportSections([]);
 renderScores([]);
 renderActions([]);
+
+const scenario = new URLSearchParams(window.location.search).get("scenario");
+if (scenarioPrompts[scenario]) {
+  input.value = scenarioPrompts[scenario];
+  runAgent();
+}

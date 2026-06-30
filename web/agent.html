@@ -10,20 +10,21 @@
   <main class="app-shell">
     <section class="hero">
       <div>
-        <div class="eyebrow">Groq + RAG + 三类电商 Agent</div>
+        <div class="eyebrow">Groq + RAG + 四类电商 Agent</div>
         <h1>电商运营 AI Agent MVP</h1>
-        <p>围绕客服售后、商品上架、广告投放和数据优化，模拟“理解问题、调用工具、生成方案、形成任务”的自动化工作流。</p>
+        <p>围绕选品、上架、推广成交、客服售后和广告复盘，模拟“理解问题、调用工具、生成卖货方案、形成任务”的自动化工作流。</p>
       </div>
       <div class="hero-status">
         <span id="modePill">等待运行</span>
         <strong>本地演示版</strong>
+        <a href="/">返回首页</a>
       </div>
     </section>
 
     <section class="metric-strip">
       <div class="metric-card">
         <span>覆盖流程</span>
-        <strong>客服 / 上架 / 投放</strong>
+        <strong>选品 / 上架 / 推广 / 售后</strong>
       </div>
       <div class="metric-card">
         <span>内置商品</span>
@@ -31,17 +32,18 @@
       </div>
       <div class="metric-card">
         <span>工具数量</span>
-        <strong>12+ 业务工具</strong>
+        <strong>15+ 业务工具</strong>
       </div>
       <div class="metric-card">
-        <span>模型模式</span>
-        <strong>Groq 真实调用</strong>
+        <span>成交能力</span>
+        <strong>推广页 + 渠道文案</strong>
       </div>
     </section>
 
     <section class="scenario-row">
       <button data-agent="售后" data-prompt="订单 E20260601002 的客户反馈便携榨汁杯坏了，想退款或补发。请启动客服售后 Agent，判断问题类型、风险等级、需要什么凭证、怎么回复客户、内部怎么处理。">客服售后 Agent</button>
       <button data-agent="上架" data-prompt="请启动商品上架 Agent，给 P2002 做上架前完整处理：资质审核、标题优化、主图视频规划、详情页结构、SKU价格、合规修复任务和发布检查清单。">商品上架 Agent</button>
+      <button data-agent="成交" data-prompt="请启动推广成交 Agent，给 P1001 生成一套可直接卖货的单品推广方案：商品卖点、推广标题、落地页结构、抖音/小红书/朋友圈/私域文案、优惠券策略、CTA 按钮和成交风险提醒。">推广成交 Agent</button>
       <button data-agent="投放" data-prompt="请启动广告投放/数据优化 Agent，复盘 P1001 的直通车、引力魔方、搜索词、人群和转化数据，给出预算、出价、否定词、素材测试和止损监控规则。">广告优化 Agent</button>
       <button data-prompt="帮我从现有商品里选一个适合做下周活动的品，说明理由，并给推广动作。">活动选品分析</button>
       <button data-prompt="给 P3003 生成一套完整商品上架方案：标题、主图规划、短视频脚本、详情页结构、SKU价格建议。">生成上架方案</button>
@@ -58,6 +60,10 @@
         <span>检查资质、标题、主图、视频、详情页、SKU、价格和售后政策，生成发布前任务清单。</span>
       </div>
       <div>
+        <strong>推广成交 Agent</strong>
+        <span>围绕商品 ID 生成推广标题、渠道文案、优惠券策略、成交页结构和购买/加微信/进店 CTA。</span>
+      </div>
+      <div>
         <strong>广告优化 Agent</strong>
         <span>分析 ROAS、点击率、转化率、搜索词和人群包，生成预算、出价、素材测试和止损规则。</span>
       </div>
@@ -68,10 +74,10 @@
         <div class="panel-head">
           <div>
             <h2>业务问题</h2>
-            <p>输入电商运营问题，Agent 会自动识别场景并调用对应工具。当前不接真实店铺 API，使用内置样例数据演示能力。</p>
+            <p>输入电商运营问题，Agent 会自动识别场景并调用对应工具。当前不接真实店铺 API，使用内置样例数据演示从商品到成交的闭环能力。</p>
           </div>
         </div>
-        <textarea id="messageInput" placeholder="例如：启动客服售后 Agent，处理订单 E20260601002 的质量售后问题，并生成客户回复和内部处理动作。"></textarea>
+        <textarea id="messageInput" placeholder="例如：启动推广成交 Agent，给 P1001 生成单品推广页、渠道文案、优惠券策略和购买 CTA。"></textarea>
         <button class="primary-btn" id="sendBtn">运行智能体</button>
         <div class="hint-box">
           <strong>可用商品 ID</strong>
