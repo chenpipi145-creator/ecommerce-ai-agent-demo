@@ -8,6 +8,9 @@
 - RAG 知识库：内置上架规范、标题优化、主图视频、SKU 定价、推广投放、售后和物流规则。
 - 工具调用：模拟查询商品、订单、物流，生成售后方案、上架体检、上架素材包、推广成交方案、推广计划、运营诊断和选品排序。
 - 结构化报告：输出执行摘要、分模块分析、指标卡、行动计划、下一步建议和风险提醒。
+- 商家账号：支持注册、登录、退出、角色字段和登录会话。
+- 店铺绑定：支持保存淘宝/抖店/拼多多/京东/微信小店的店铺占位信息，并加密保存 API token。
+- 数据隔离：Agent 运行记录按登录用户保存，后续真实店铺 API 可继续按 `user_id/shop_id` 隔离。
 - 真实模型模式：配置 `GROQ_API_KEY` 后，后端会调用 Groq 的 OpenAI 兼容接口；没有 Key 时会自动进入本地演示模式。
 - 前端工作台：左侧输入业务问题，中间显示 AI 运营报告，右侧显示 Agent 执行轨迹，下方展示工具调用、RAG 命中和行动清单。
 
@@ -58,6 +61,13 @@ http://127.0.0.1:8765
 http://127.0.0.1:8765/agent
 ```
 
+商家登录和工作区：
+
+```text
+http://127.0.0.1:8765/login
+http://127.0.0.1:8765/dashboard
+```
+
 ## 配置 Groq API
 
 启动前设置环境变量：
@@ -98,7 +108,12 @@ GROQ_API_KEY=你的 Groq Key
 ## 主要接口
 
 - `GET /`：打开首页 Hero 页面
+- `GET /login`：商家登录/注册页
+- `GET /dashboard`：商家工作区
 - `GET /agent`：打开电商 AI Agent 工作台
+- `GET /api/me`：当前登录用户和店铺
+- `GET/POST /api/shops`：读取或新增当前用户店铺
+- `GET /api/agent-runs`：读取当前用户 Agent 运行记录
 - `GET /api/demo-data`：返回示例商品、订单、物流和知识库
 - `POST /api/chat`：运行电商 AI Agent，执行意图识别、RAG 检索、工具调用和模型生成
 
@@ -131,9 +146,14 @@ ecommerce_agent_demo/
   requirements.txt   Python 依赖文件
   web/
     index.html       首页 Hero 页面
+    login.html       登录/注册页面
+    dashboard.html   商家工作区
     agent.html       电商 AI Agent 工作台
     styles.css       页面样式
     app.js           页面交互和接口调用
+    auth.js          登录/注册交互
+    dashboard.js     商家工作区交互
     home.js          首页聚光灯交互
+  data/              SQLite 数据库目录，本地生成，不提交 Git
   README.md          使用说明
 ```

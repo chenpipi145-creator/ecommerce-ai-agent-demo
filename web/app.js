@@ -10,6 +10,8 @@ const modePill = document.querySelector("#modePill");
 const reportSections = document.querySelector("#reportSections");
 const scoreList = document.querySelector("#scoreList");
 const actionList = document.querySelector("#actionList");
+const accountPill = document.querySelector("#accountPill");
+const shopSelect = document.querySelector("#shopSelect");
 
 const scenarioPrompts = {
   after_sales: "订单 E20260601002 的客户反馈便携榨汁杯坏了，想退款或补发。请启动客服售后 Agent，判断问题类型、风险等级、需要什么凭证、怎么回复客户、内部怎么处理。",
@@ -180,9 +182,13 @@ async function runAgent() {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, shop_id: shopSelect?.value || null }),
     });
     const data = await response.json();
+    if (response.status === 401) {
+      location.href = "/login";
+      return;
+    }
     if (!response.ok) throw new Error(data.error || "请求失败");
     renderData(data);
   } catch (error) {
@@ -192,6 +198,25 @@ async function runAgent() {
   } finally {
     sendBtn.disabled = false;
     sendBtn.textContent = "运行智能体";
+  }
+}
+
+async function loadAccount() {
+  const response = await fetch("/api/me");
+  const data = await response.json();
+  if (!data.user) {
+    location.href = "/login";
+    return;
+  }
+  if (accountPill) accountPill.textContent = `${data.user.name} · ${data.user.role}`;
+  if (shopSelect) {
+    shopSelect.innerHTML = `<option value="">未选择店铺，使用演示样例数据</option>`;
+    for (const shop of data.shops || []) {
+      const option = document.createElement("option");
+      option.value = shop.id;
+      option.textContent = `${shop.shop_name} · ${shop.platform}`;
+      shopSelect.appendChild(option);
+    }
   }
 }
 
@@ -210,6 +235,7 @@ renderNext([], []);
 renderReportSections([]);
 renderScores([]);
 renderActions([]);
+loadAccount();
 
 const scenario = new URLSearchParams(window.location.search).get("scenario");
 if (scenarioPrompts[scenario]) {

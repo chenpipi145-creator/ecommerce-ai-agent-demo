@@ -1,10 +1,16 @@
 import json
 import os
 import re
+import base64
+import hashlib
+import hmac
+import secrets
+import sqlite3
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -12,6 +18,264 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8765"))
+DATA_DIR = ROOT / "data"
+DB_PATH = Path(os.getenv("DB_PATH", DATA_DIR / "ecommerce_agent.db"))
+APP_SECRET = os.getenv("APP_SECRET") or os.getenv("GROQ_API_KEY") or "dev-secret-change-me"
+SESSION_MAX_AGE = 60 * 60 * 24 * 7
+
+
+def now_ts():
+    return int(time.time())
+
+
+def db_connect():
+    DATA_DIR.mkdir(exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+def init_db():
+    with db_connect() as conn:
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'owner',
+                created_at INTEGER NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS sessions (
+                token TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                expires_at INTEGER NOT NULL,
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS shops (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                platform TEXT NOT NULL,
+                shop_name TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS shop_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                shop_id INTEGER NOT NULL,
+                token_label TEXT NOT NULL,
+                encrypted_token TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY(shop_id) REFERENCES shops(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS agent_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                shop_id INTEGER,
+                message TEXT NOT NULL,
+                intent TEXT,
+                mode TEXT,
+                result_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY(shop_id) REFERENCES shops(id) ON DELETE SET NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS approval_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                shop_id INTEGER,
+                title TEXT NOT NULL,
+                risk_level TEXT NOT NULL DEFAULT 'medium',
+                status TEXT NOT NULL DEFAULT 'pending',
+                payload_json TEXT NOT NULL DEFAULT '{}',
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY(shop_id) REFERENCES shops(id) ON DELETE SET NULL
+            );
+            """
+        )
+
+
+def row_to_dict(row):
+    return dict(row) if row else None
+
+
+def hash_password(password, salt=None):
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 120000)
+    return f"pbkdf2_sha256${salt}${base64.b64encode(digest).decode('ascii')}"
+
+
+def verify_password(password, stored):
+    try:
+        method, salt, digest = stored.split("$", 2)
+    except ValueError:
+        return False
+    if method != "pbkdf2_sha256":
+        return False
+    candidate = hash_password(password, salt)
+    return hmac.compare_digest(candidate, stored)
+
+
+def secret_stream(length, context):
+    out = b""
+    counter = 0
+    key = APP_SECRET.encode("utf-8")
+    while len(out) < length:
+        counter += 1
+        out += hmac.new(key, f"{context}:{counter}".encode("utf-8"), hashlib.sha256).digest()
+    return out[:length]
+
+
+def encrypt_value(value):
+    raw = value.encode("utf-8")
+    nonce = secrets.token_bytes(16)
+    stream = secret_stream(len(raw), base64.b64encode(nonce).decode("ascii"))
+    encrypted = bytes(a ^ b for a, b in zip(raw, stream))
+    return base64.urlsafe_b64encode(nonce + encrypted).decode("ascii")
+
+
+def create_user(email, password, name, role="owner"):
+    email = email.strip().lower()
+    name = name.strip() or email.split("@")[0]
+    if role not in {"owner", "operator", "customer_service", "media_buyer", "admin"}:
+        role = "owner"
+    with db_connect() as conn:
+        existing_count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        if existing_count == 0:
+            role = "owner"
+        conn.execute(
+            "INSERT INTO users(email, name, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)",
+            (email, name, hash_password(password), role, now_ts()),
+        )
+        user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        return row_to_dict(
+            conn.execute(
+                "SELECT id, email, name, role, created_at FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+        )
+
+
+def get_user_by_id(user_id):
+    with db_connect() as conn:
+        return row_to_dict(conn.execute("SELECT id, email, name, role, created_at FROM users WHERE id = ?", (user_id,)).fetchone())
+
+
+def get_user_by_email(email):
+    with db_connect() as conn:
+        return row_to_dict(conn.execute("SELECT * FROM users WHERE email = ?", (email.strip().lower(),)).fetchone())
+
+
+def create_session(user_id):
+    token = secrets.token_urlsafe(32)
+    expires_at = now_ts() + SESSION_MAX_AGE
+    with db_connect() as conn:
+        conn.execute(
+            "INSERT INTO sessions(token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
+            (token, user_id, expires_at, now_ts()),
+        )
+    return token, expires_at
+
+
+def delete_session(token):
+    if not token:
+        return
+    with db_connect() as conn:
+        conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
+
+
+def get_user_from_token(token):
+    if not token:
+        return None
+    with db_connect() as conn:
+        row = conn.execute(
+            """
+            SELECT users.id, users.email, users.name, users.role, users.created_at
+            FROM sessions
+            JOIN users ON users.id = sessions.user_id
+            WHERE sessions.token = ? AND sessions.expires_at > ?
+            """,
+            (token, now_ts()),
+        ).fetchone()
+        return row_to_dict(row)
+
+
+def list_user_shops(user_id):
+    with db_connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT shops.id, shops.platform, shops.shop_name, shops.status, shops.created_at,
+                   COUNT(shop_tokens.id) AS token_count
+            FROM shops
+            LEFT JOIN shop_tokens ON shop_tokens.shop_id = shops.id
+            WHERE shops.user_id = ?
+            GROUP BY shops.id
+            ORDER BY shops.created_at DESC
+            """,
+            (user_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
+def create_shop(user_id, platform, shop_name, api_token=""):
+    platform = platform.strip()[:40] or "taobao"
+    shop_name = shop_name.strip()[:80] or "未命名店铺"
+    with db_connect() as conn:
+        conn.execute(
+            "INSERT INTO shops(user_id, platform, shop_name, status, created_at) VALUES (?, ?, ?, ?, ?)",
+            (user_id, platform, shop_name, "token_saved" if api_token else "pending", now_ts()),
+        )
+        shop_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        if api_token:
+            conn.execute(
+                "INSERT INTO shop_tokens(shop_id, token_label, encrypted_token, created_at) VALUES (?, ?, ?, ?)",
+                (shop_id, "api_token", encrypt_value(api_token), now_ts()),
+            )
+    return {"id": shop_id, "platform": platform, "shop_name": shop_name, "status": "token_saved" if api_token else "pending"}
+
+
+def list_agent_runs(user_id, limit=20):
+    with db_connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, shop_id, message, intent, mode, created_at
+            FROM agent_runs
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (user_id, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
+def save_agent_run(user_id, shop_id, message, answer):
+    with db_connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO agent_runs(user_id, shop_id, message, intent, mode, result_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                shop_id,
+                message,
+                answer.get("intent"),
+                answer.get("mode"),
+                json.dumps(answer, ensure_ascii=False),
+                now_ts(),
+            ),
+        )
 
 
 KNOWLEDGE_BASE = [
@@ -1330,13 +1594,20 @@ def build_agent_response(message):
 
 
 class DemoHandler(BaseHTTPRequestHandler):
-    def _send_json(self, data, status=200):
+    def _send_json(self, data, status=200, headers=None):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        for key, value in (headers or {}).items():
+            self.send_header(key, value)
         self.end_headers()
         self.wfile.write(body)
+
+    def _redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.end_headers()
 
     def _send_file(self, path):
         content = path.read_bytes()
@@ -1351,13 +1622,80 @@ class DemoHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def _read_json(self):
+        length = int(self.headers.get("Content-Length", "0"))
+        if length <= 0:
+            return {}
+        return json.loads(self.rfile.read(length).decode("utf-8"))
+
+    def _cookie_token(self):
+        header = self.headers.get("Cookie", "")
+        jar = cookies.SimpleCookie()
+        try:
+            jar.load(header)
+        except cookies.CookieError:
+            return None
+        morsel = jar.get("session")
+        return morsel.value if morsel else None
+
+    def _current_user(self):
+        return get_user_from_token(self._cookie_token())
+
+    def _require_user(self):
+        user = self._current_user()
+        if not user:
+            self._send_json({"error": "未登录"}, 401)
+            return None
+        return user
+
+    def _session_cookie(self, token, expires_at):
+        max_age = max(0, expires_at - now_ts())
+        return f"session={token}; Path=/; Max-Age={max_age}; HttpOnly; SameSite=Lax"
+
+    def _clear_session_cookie(self):
+        return "session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"
+
     def do_GET(self):
         parsed_path = urllib.parse.urlparse(self.path).path
         if parsed_path == "/":
             self._send_file(ROOT / "web" / "index.html")
             return
+        if parsed_path == "/login":
+            if self._current_user():
+                self._redirect("/dashboard")
+                return
+            self._send_file(ROOT / "web" / "login.html")
+            return
+        if parsed_path == "/dashboard":
+            if not self._current_user():
+                self._redirect("/login")
+                return
+            self._send_file(ROOT / "web" / "dashboard.html")
+            return
         if parsed_path in {"/agent", "/workbench"}:
+            if not self._current_user():
+                self._redirect("/login")
+                return
             self._send_file(ROOT / "web" / "agent.html")
+            return
+        if parsed_path == "/api/me":
+            user = self._current_user()
+            if not user:
+                self._send_json({"user": None})
+                return
+            self._send_json({"user": user, "shops": list_user_shops(user["id"])})
+            return
+        if parsed_path == "/api/shops":
+            user = self._require_user()
+            if not user:
+                return
+            self._send_json({"shops": list_user_shops(user["id"])})
+            return
+        if parsed_path == "/api/agent-runs":
+            user = self._require_user()
+            if not user:
+                return
+            self._send_json({"runs": list_agent_runs(user["id"])})
             return
         if parsed_path == "/api/demo-data":
             self._send_json({"orders": ORDERS, "products": PRODUCTS, "knowledge": KNOWLEDGE_BASE})
@@ -1369,12 +1707,77 @@ class DemoHandler(BaseHTTPRequestHandler):
         self._send_json({"error": "Not found"}, 404)
 
     def do_POST(self):
-        if self.path != "/api/chat":
+        parsed_path = urllib.parse.urlparse(self.path).path
+        if parsed_path == "/api/register":
+            try:
+                payload = self._read_json()
+                email = str(payload.get("email", "")).strip().lower()
+                password = str(payload.get("password", ""))
+                name = str(payload.get("name", "")).strip()
+                role = str(payload.get("role", "owner"))
+                if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+                    self._send_json({"error": "请输入有效邮箱"}, 400)
+                    return
+                if len(password) < 8:
+                    self._send_json({"error": "密码至少 8 位"}, 400)
+                    return
+                user = create_user(email, password, name, role)
+                token, expires_at = create_session(user["id"])
+                self._send_json({"user": user}, headers={"Set-Cookie": self._session_cookie(token, expires_at)})
+            except sqlite3.IntegrityError:
+                self._send_json({"error": "该邮箱已注册"}, 409)
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON"}, 400)
+            return
+
+        if parsed_path == "/api/login":
+            try:
+                payload = self._read_json()
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON"}, 400)
+                return
+            email = str(payload.get("email", "")).strip().lower()
+            password = str(payload.get("password", ""))
+            user_row = get_user_by_email(email)
+            if not user_row or not verify_password(password, user_row["password_hash"]):
+                self._send_json({"error": "邮箱或密码错误"}, 401)
+                return
+            user = get_user_by_id(user_row["id"])
+            token, expires_at = create_session(user["id"])
+            self._send_json({"user": user}, headers={"Set-Cookie": self._session_cookie(token, expires_at)})
+            return
+
+        if parsed_path == "/api/logout":
+            delete_session(self._cookie_token())
+            self._send_json({"ok": True}, headers={"Set-Cookie": self._clear_session_cookie()})
+            return
+
+        if parsed_path == "/api/shops":
+            user = self._require_user()
+            if not user:
+                return
+            try:
+                payload = self._read_json()
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON"}, 400)
+                return
+            shop = create_shop(
+                user["id"],
+                str(payload.get("platform", "")),
+                str(payload.get("shop_name", "")),
+                str(payload.get("api_token", "")),
+            )
+            self._send_json({"shop": shop, "shops": list_user_shops(user["id"])})
+            return
+
+        if parsed_path != "/api/chat":
             self._send_json({"error": "Not found"}, 404)
             return
-        length = int(self.headers.get("Content-Length", "0"))
+        user = self._require_user()
+        if not user:
+            return
         try:
-            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            payload = self._read_json()
         except json.JSONDecodeError:
             self._send_json({"error": "Invalid JSON"}, 400)
             return
@@ -1382,13 +1785,27 @@ class DemoHandler(BaseHTTPRequestHandler):
         if not message:
             self._send_json({"error": "请输入业务问题"}, 400)
             return
-        self._send_json(build_agent_response(message))
+        shop_id = payload.get("shop_id")
+        try:
+            shop_id = int(shop_id) if shop_id else None
+        except (TypeError, ValueError):
+            shop_id = None
+        answer = build_agent_response(message)
+        answer["tenant"] = {
+            "user_id": user["id"],
+            "user_role": user["role"],
+            "shop_id": shop_id,
+            "data_scope": "当前版本已按登录用户保存运行记录；真实店铺 API 接入后会按 user_id/shop_id 隔离数据。",
+        }
+        save_agent_run(user["id"], shop_id, message, answer)
+        self._send_json(answer)
 
     def log_message(self, format, *args):
         print(f"[demo] {self.address_string()} - {format % args}")
 
 
 if __name__ == "__main__":
+    init_db()
     server = ThreadingHTTPServer((HOST, PORT), DemoHandler)
     print(f"电商 AI 智能体 Demo 已启动：http://{HOST}:{PORT}")
     print("配置 GROQ_API_KEY 后将使用 Groq；未配置时使用本地模拟模式。")

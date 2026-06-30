@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>登录 - 电商运营 AI Agent</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-panel">
+      <a class="auth-back" href="/">返回首页</a>
+      <div class="auth-copy">
+        <div class="eyebrow">商家工作区</div>
+        <h1>登录后管理自己的店铺和 Agent 记录</h1>
+        <p>当前版本已支持账号、角色、店铺绑定占位、token 加密保存和按商家隔离运行记录。真实平台 API 会在后续接入。</p>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-tabs" role="tablist">
+          <button class="active" data-auth-tab="login">登录</button>
+          <button data-auth-tab="register">注册</button>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <label>
+            邮箱
+            <input name="email" type="email" autocomplete="email" required placeholder="owner@example.com" />
+          </label>
+          <label>
+            密码
+            <input name="password" type="password" autocomplete="current-password" required placeholder="至少 8 位" />
+          </label>
+          <button class="primary-btn" type="submit">进入商家工作区</button>
+        </form>
+
+        <form id="registerForm" class="auth-form hidden">
+          <label>
+            商家名称
+            <input name="name" required placeholder="例如：眠小云旗舰店" />
+          </label>
+          <label>
+            邮箱
+            <input name="email" type="email" autocomplete="email" required placeholder="owner@example.com" />
+          </label>
+          <label>
+            密码
+            <input name="password" type="password" autocomplete="new-password" required placeholder="至少 8 位" />
+          </label>
+          <label>
+            默认角色
+            <select name="role">
+              <option value="owner">老板 / 店铺所有者</option>
+              <option value="operator">运营</option>
+              <option value="customer_service">客服</option>
+              <option value="media_buyer">投手</option>
+            </select>
+          </label>
+          <button class="primary-btn" type="submit">创建账号</button>
+        </form>
+
+        <div id="authMessage" class="form-message"></div>
+      </div>
+    </section>
+  </main>
+  <script src="/auth.js"></script>
+</body>
+</html>

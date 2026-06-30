@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>商家工作区 - 电商运营 AI Agent</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">多商家 SaaS 基础版</div>
+        <h1>商家工作区</h1>
+        <p>管理账号、角色、店铺授权占位和 Agent 运行记录。每个商家登录后只看到自己的店铺和记录。</p>
+      </div>
+      <div class="hero-status">
+        <span id="userPill">读取账号中</span>
+        <a href="/agent">进入 Agent 工作台</a>
+        <button class="text-btn" id="logoutBtn">退出登录</button>
+      </div>
+    </section>
+
+    <section class="metric-strip">
+      <div class="metric-card">
+        <span>账号角色</span>
+        <strong id="roleMetric">-</strong>
+      </div>
+      <div class="metric-card">
+        <span>绑定店铺</span>
+        <strong id="shopMetric">0</strong>
+      </div>
+      <div class="metric-card">
+        <span>Agent 记录</span>
+        <strong id="runMetric">0</strong>
+      </div>
+      <div class="metric-card">
+        <span>数据隔离</span>
+        <strong>按账号隔离</strong>
+      </div>
+    </section>
+
+    <section class="dashboard-grid account-grid">
+      <aside class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>添加店铺授权</h2>
+            <p>先保存平台和 token 占位。真实授权流程需要对应平台开放接口和回调地址。</p>
+          </div>
+        </div>
+        <form id="shopForm" class="stack-form">
+          <label>
+            平台
+            <select name="platform">
+              <option value="taobao">淘宝 / 天猫</option>
+              <option value="douyin">抖店</option>
+              <option value="pinduoduo">拼多多</option>
+              <option value="jd">京东</option>
+              <option value="wechat_shop">微信小店</option>
+            </select>
+          </label>
+          <label>
+            店铺名称
+            <input name="shop_name" required placeholder="例如：眠小云旗舰店" />
+          </label>
+          <label>
+            API Token / 授权码
+            <textarea name="api_token" rows="4" placeholder="真实平台接入时粘贴授权 token；当前会加密保存"></textarea>
+          </label>
+          <button class="primary-btn" type="submit">保存店铺</button>
+        </form>
+        <div id="shopMessage" class="form-message"></div>
+      </aside>
+
+      <section class="panel report-panel">
+        <div class="panel-head">
+          <div>
+            <h2>我的店铺</h2>
+            <p>店铺数据按当前登录账号隔离，后续真实 API 会绑定到这里。</p>
+          </div>
+        </div>
+        <div id="shopList" class="item-list"></div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>权限说明</h2>
+            <p>当前先完成角色识别，后续可按角色限制页面和操作。</p>
+          </div>
+        </div>
+        <div class="item-list">
+          <div class="item"><strong>老板</strong><span>可管理店铺、查看全部 Agent 结果和审批任务。</span></div>
+          <div class="item"><strong>运营</strong><span>可管理商品、推广成交、活动选品和复盘。</span></div>
+          <div class="item"><strong>客服</strong><span>可处理售后、物流和客户话术。</span></div>
+          <div class="item"><strong>投手</strong><span>可查看投放优化和素材测试建议。</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head compact">
+        <h2>Agent 运行记录</h2>
+      </div>
+      <div id="runList" class="action-list"></div>
+    </section>
+  </main>
+  <script src="/dashboard.js"></script>
+</body>
+</html>
