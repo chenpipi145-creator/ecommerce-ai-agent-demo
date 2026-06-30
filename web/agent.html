@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>电商运营 AI Agent MVP</title>
+  <title>推广成交生成器 - AI 单品推广工具</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <main class="app-shell">
-    <section class="hero">
+  <main class="app-shell conversion-workbench">
+    <section class="hero conversion-hero-panel">
       <div>
-        <div class="eyebrow">Groq + RAG + 四类电商 Agent</div>
-        <h1>电商运营 AI Agent MVP</h1>
-        <p>围绕选品、上架、推广成交、客服售后和广告复盘，模拟“理解问题、调用工具、生成卖货方案、形成任务”的自动化工作流。</p>
+        <div class="eyebrow">主功能 · AI 单品推广成交 Agent</div>
+        <h1>把一个商品变成一套可执行的卖货方案</h1>
+        <p>先选商品和推广目标，再生成卖点、标题、渠道文案、落地页结构、优惠券策略和风险提醒。客服、上架、广告能力只作为辅助工具接入。</p>
       </div>
       <div class="hero-status">
         <span id="modePill">等待运行</span>
@@ -22,86 +22,97 @@
       </div>
     </section>
 
-    <section class="metric-strip">
-      <div class="metric-card">
-        <span>覆盖流程</span>
-        <strong>选品 / 上架 / 推广 / 售后</strong>
+    <section class="conversion-flow">
+      <div class="flow-card active">
+        <span>1</span>
+        <strong>选择商品</strong>
+        <p>演示商品或未来真实店铺商品</p>
       </div>
-      <div class="metric-card">
-        <span>内置商品</span>
-        <strong>3 个样品</strong>
+      <div class="flow-card active">
+        <span>2</span>
+        <strong>确定渠道</strong>
+        <p>抖音 / 小红书 / 朋友圈 / 私域</p>
       </div>
-      <div class="metric-card">
-        <span>工具数量</span>
-        <strong>15+ 业务工具</strong>
+      <div class="flow-card active">
+        <span>3</span>
+        <strong>生成成交包</strong>
+        <p>文案、落地页、优惠、CTA</p>
       </div>
-      <div class="metric-card">
-        <span>成交能力</span>
-        <strong>推广页 + 渠道文案</strong>
-      </div>
-    </section>
-
-    <section class="scenario-row">
-      <button data-agent="售后" data-prompt="订单 E20260601002 的客户反馈便携榨汁杯坏了，想退款或补发。请启动客服售后 Agent，判断问题类型、风险等级、需要什么凭证、怎么回复客户、内部怎么处理。">客服售后 Agent</button>
-      <button data-agent="上架" data-prompt="请启动商品上架 Agent，给 P2002 做上架前完整处理：资质审核、标题优化、主图视频规划、详情页结构、SKU价格、合规修复任务和发布检查清单。">商品上架 Agent</button>
-      <button data-agent="成交" data-prompt="请启动推广成交 Agent，给 P1001 生成一套可直接卖货的单品推广方案：商品卖点、推广标题、落地页结构、抖音/小红书/朋友圈/私域文案、优惠券策略、CTA 按钮和成交风险提醒。">推广成交 Agent</button>
-      <button data-agent="投放" data-prompt="请启动广告投放/数据优化 Agent，复盘 P1001 的直通车、引力魔方、搜索词、人群和转化数据，给出预算、出价、否定词、素材测试和止损监控规则。">广告优化 Agent</button>
-      <button data-prompt="帮我从现有商品里选一个适合做下周活动的品，说明理由，并给推广动作。">活动选品分析</button>
-      <button data-prompt="给 P3003 生成一套完整商品上架方案：标题、主图规划、短视频脚本、详情页结构、SKU价格建议。">生成上架方案</button>
-      <button data-prompt="订单 E20260601001 物流到哪里了，帮我查一下并回复客户。">物流催件处理</button>
-    </section>
-
-    <section class="agent-strip">
-      <div>
-        <strong>客服售后 Agent</strong>
-        <span>识别退款、退货、补发、投诉和物流催件，输出风险等级、凭证要求、客户话术和内部工单。</span>
-      </div>
-      <div>
-        <strong>商品上架 Agent</strong>
-        <span>检查资质、标题、主图、视频、详情页、SKU、价格和售后政策，生成发布前任务清单。</span>
-      </div>
-      <div>
-        <strong>推广成交 Agent</strong>
-        <span>围绕商品 ID 生成推广标题、渠道文案、优惠券策略、成交页结构和购买/加微信/进店 CTA。</span>
-      </div>
-      <div>
-        <strong>广告优化 Agent</strong>
-        <span>分析 ROAS、点击率、转化率、搜索词和人群包，生成预算、出价、素材测试和止损规则。</span>
+      <div class="flow-card muted">
+        <span>4</span>
+        <strong>人工复核</strong>
+        <p>敏感动作先确认再执行</p>
       </div>
     </section>
 
-    <section class="dashboard-grid">
-      <aside class="input-panel panel">
-        <div class="panel-head">
-          <div>
-            <h2>业务问题</h2>
-            <p>输入电商运营问题，Agent 会自动识别场景并调用对应工具。当前不接真实店铺 API，使用内置样例数据演示从商品到成交的闭环能力。</p>
-          </div>
+    <section class="conversion-generator panel">
+      <div class="panel-head">
+        <div>
+          <h2>单品推广生成器</h2>
+          <p>商家不需要理解 Agent，只需要告诉系统“我要卖哪个品、卖给谁、在哪卖”。</p>
         </div>
-        <textarea id="messageInput" placeholder="例如：启动推广成交 Agent，给 P1001 生成单品推广页、渠道文案、优惠券策略和购买 CTA。"></textarea>
-        <button class="primary-btn" id="sendBtn">运行智能体</button>
-        <div class="hint-box">
-          <strong>可用商品 ID</strong>
-          <span>P1001 云朵记忆枕 / P2002 便携榨汁杯 / P3003 夏季防晒衣</span>
-        </div>
-        <div class="hint-box">
-          <strong>当前店铺</strong>
+      </div>
+
+      <div class="generator-grid">
+        <label>
+          商品
+          <select id="productSelect">
+            <option value="P1001">P1001 · 云朵记忆枕</option>
+            <option value="P2002">P2002 · 便携榨汁杯</option>
+            <option value="P3003">P3003 · 夏季防晒衣</option>
+          </select>
+        </label>
+        <label>
+          主推渠道
+          <select id="channelSelect">
+            <option value="抖音、小红书、朋友圈和私域">全渠道首发</option>
+            <option value="抖音短视频和直播间">抖音短视频</option>
+            <option value="小红书种草内容">小红书种草</option>
+            <option value="朋友圈和私域社群">朋友圈/私域</option>
+          </select>
+        </label>
+        <label>
+          成交目标
+          <select id="goalSelect">
+            <option value="提升单品成交转化率，先做低成本测试">提升转化</option>
+            <option value="快速测出主卖点和目标人群">测试卖点</option>
+            <option value="为新品首发准备一整套推广材料">新品首发</option>
+            <option value="为付费投放准备素材和落地页">投放准备</option>
+          </select>
+        </label>
+        <label>
+          当前店铺
           <select id="shopSelect">
             <option value="">未选择店铺，使用演示样例数据</option>
           </select>
-        </div>
-      </aside>
+        </label>
+      </div>
 
+      <textarea id="messageInput" placeholder="这里会自动生成推广成交 Agent 指令，也可以手动补充商品卖点、价格、目标人群或渠道限制。"></textarea>
+      <div class="generator-actions">
+        <button class="primary-btn" id="sendBtn">生成单品成交方案</button>
+        <button class="secondary-inline-btn" type="button" id="fillPromptBtn">重置为成交模板</button>
+      </div>
+    </section>
+
+    <section class="quick-prompts">
+      <button class="featured" data-prompt="请启动推广成交 Agent，给 P1001 生成一套可直接卖货的单品推广方案：商品卖点、推广标题、落地页结构、抖音/小红书/朋友圈/私域文案、优惠券策略、CTA 按钮和成交风险提醒。">生成 P1001 成交包</button>
+      <button data-prompt="请基于 P2002 便携榨汁杯，生成适合抖音短视频的卖点脚本、前三秒钩子、直播间话术和优惠券策略。">抖音短视频脚本</button>
+      <button data-prompt="请基于 P3003 夏季防晒衣，生成小红书种草笔记、痛点标题、场景化正文和评论区引导话术。">小红书种草文案</button>
+      <button data-prompt="请给 P1001 设计一个朋友圈私域成交方案，包括三条朋友圈、社群话术、限时券和加微信 CTA。">朋友圈私域转化</button>
+    </section>
+
+    <section class="dashboard-grid conversion-result-grid">
       <section class="report-panel panel">
         <div class="panel-head">
           <div>
-            <h2>AI 运营报告</h2>
-            <p id="summaryText">等待运行。这里会展示结论、依据、建议和风险。</p>
+            <h2>成交方案</h2>
+            <p id="summaryText">等待生成。这里会优先展示卖点、渠道文案、落地页结构和优惠策略。</p>
           </div>
         </div>
         <div class="answer-card">
-          <div class="answer-label">完整分析</div>
-          <div id="answerText">点击上方场景，或输入自己的问题。</div>
+          <div class="answer-label">完整推广方案</div>
+          <div id="answerText">选择商品后点击“生成单品成交方案”。</div>
         </div>
         <div class="report-sections" id="reportSections"></div>
       </section>
@@ -109,8 +120,8 @@
       <aside class="trace-panel panel">
         <div class="panel-head">
           <div>
-            <h2>执行链路</h2>
-            <p>展示意图、RAG、工具和模型生成过程。</p>
+            <h2>生成链路</h2>
+            <p>展示意图、知识库、商品数据和模型生成过程。</p>
           </div>
         </div>
         <div class="flow-list" id="traceList"></div>
@@ -120,20 +131,20 @@
     <section class="lower-grid">
       <div class="panel">
         <div class="panel-head compact">
-          <h2>指标卡</h2>
+          <h2>成交指标</h2>
         </div>
         <div class="score-grid" id="scoreList"></div>
       </div>
 
       <div class="panel">
         <div class="panel-head compact">
-          <h2>行动计划</h2>
+          <h2>执行清单</h2>
         </div>
         <div class="action-list" id="actionList"></div>
       </div>
     </section>
 
-    <section class="details-grid">
+    <section class="details-grid muted-details">
       <div class="panel">
         <div class="panel-head compact">
           <h2>工具调用</h2>
@@ -142,15 +153,27 @@
       </div>
       <div class="panel">
         <div class="panel-head compact">
-          <h2>RAG 命中知识</h2>
+          <h2>命中知识</h2>
         </div>
         <div id="ragList" class="item-list"></div>
       </div>
       <div class="panel">
         <div class="panel-head compact">
-          <h2>下一步与风险</h2>
+          <h2>复核与风险</h2>
         </div>
         <div id="nextList" class="item-list"></div>
+      </div>
+    </section>
+
+    <section class="support-section app-support">
+      <div class="section-heading">
+        <span>辅助能力</span>
+        <h2>其他 Agent 保留，但不抢主线</h2>
+      </div>
+      <div class="support-grid">
+        <button data-agent="上架" data-prompt="请启动商品上架 Agent，给 P2002 做上架前完整处理：资质审核、标题优化、主图视频规划、详情页结构、SKU价格、合规修复任务和发布检查清单。"><strong>商品上架</strong><span>补齐标题、主图、详情页素材</span></button>
+        <button data-agent="投放" data-prompt="请启动广告投放/数据优化 Agent，复盘 P1001 的直通车、引力魔方、搜索词、人群和转化数据，给出预算、出价、否定词、素材测试和止损监控规则。"><strong>广告优化</strong><span>给推广素材做预算和止损判断</span></button>
+        <button data-agent="售后" data-prompt="订单 E20260601002 的客户反馈便携榨汁杯坏了，想退款或补发。请启动客服售后 Agent，判断问题类型、风险等级、需要什么凭证、怎么回复客户、内部怎么处理。"><strong>客服售后</strong><span>把售后风险转成复核任务</span></button>
       </div>
     </section>
   </main>

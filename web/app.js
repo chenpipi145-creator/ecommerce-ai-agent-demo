@@ -12,6 +12,10 @@ const scoreList = document.querySelector("#scoreList");
 const actionList = document.querySelector("#actionList");
 const accountPill = document.querySelector("#accountPill");
 const shopSelect = document.querySelector("#shopSelect");
+const productSelect = document.querySelector("#productSelect");
+const channelSelect = document.querySelector("#channelSelect");
+const goalSelect = document.querySelector("#goalSelect");
+const fillPromptBtn = document.querySelector("#fillPromptBtn");
 
 const scenarioPrompts = {
   after_sales: "订单 E20260601002 的客户反馈便携榨汁杯坏了，想退款或补发。请启动客服售后 Agent，判断问题类型、风险等级、需要什么凭证、怎么回复客户、内部怎么处理。",
@@ -22,10 +26,29 @@ const scenarioPrompts = {
 
 const defaultTrace = [
   { name: "意图理解", detail: "等待用户输入" },
-  { name: "RAG 检索", detail: "等待检索知识库" },
-  { name: "工具执行", detail: "等待调用商品/推广/广告/订单工具" },
-  { name: "反馈生成", detail: "等待 Groq 输出运营报告" },
+  { name: "知识检索", detail: "等待匹配推广成交规则" },
+  { name: "商品工具", detail: "等待读取商品、广告和成交数据" },
+  { name: "方案生成", detail: "等待输出卖货材料" },
 ];
+
+function buildConversionPrompt() {
+  const productId = productSelect?.value || "P1001";
+  const channel = channelSelect?.value || "抖音、小红书、朋友圈和私域";
+  const goal = goalSelect?.value || "提升单品成交转化率，先做低成本测试";
+  return [
+    `请启动推广成交 Agent，围绕 ${productId} 生成一套可直接执行的单品卖货方案。`,
+    `推广目标：${goal}。`,
+    `主推渠道：${channel}。`,
+    "请输出：商品卖点、目标人群、用户痛点、推广标题、单品落地页结构、抖音/小红书/朋友圈/私域文案、短视频脚本、优惠券策略、购买/加微信/进店 CTA、人工复核风险提醒和 P0/P1/P2 执行清单。",
+  ].join("\n");
+}
+
+function syncPromptFromForm(force = false) {
+  if (!input) return;
+  if (force || !input.value.trim()) {
+    input.value = buildConversionPrompt();
+  }
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -168,14 +191,14 @@ async function runAgent() {
   }
 
   sendBtn.disabled = true;
-  sendBtn.textContent = "智能体运行中...";
+  sendBtn.textContent = "正在生成成交方案...";
   modePill.textContent = "执行中";
-  summaryText.textContent = "正在识别场景、检索知识库、调用业务工具...";
+  summaryText.textContent = "正在拆解商品卖点、匹配渠道文案、生成落地页和优惠策略...";
   renderTrace([
     { name: "意图理解", detail: "正在识别..." },
-    { name: "RAG 检索", detail: "等待中" },
-    { name: "工具执行", detail: "等待中" },
-    { name: "反馈生成", detail: "等待中" },
+    { name: "知识检索", detail: "等待中" },
+    { name: "商品工具", detail: "等待中" },
+    { name: "方案生成", detail: "等待中" },
   ]);
 
   try {
@@ -197,7 +220,7 @@ async function runAgent() {
     answerText.textContent = `运行失败：${error.message}`;
   } finally {
     sendBtn.disabled = false;
-    sendBtn.textContent = "运行智能体";
+    sendBtn.textContent = "生成单品成交方案";
   }
 }
 
@@ -228,6 +251,10 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
 });
 
 sendBtn.addEventListener("click", runAgent);
+fillPromptBtn?.addEventListener("click", () => syncPromptFromForm(true));
+[productSelect, channelSelect, goalSelect].forEach((control) => {
+  control?.addEventListener("change", () => syncPromptFromForm(true));
+});
 renderTrace(defaultTrace);
 renderDocs([]);
 renderTools([]);
@@ -236,6 +263,7 @@ renderReportSections([]);
 renderScores([]);
 renderActions([]);
 loadAccount();
+syncPromptFromForm(false);
 
 const scenario = new URLSearchParams(window.location.search).get("scenario");
 if (scenarioPrompts[scenario]) {

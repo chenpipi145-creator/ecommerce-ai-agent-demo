@@ -3,67 +3,122 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>电商运营 AI Agent MVP</title>
+  <title>AI 单品推广成交工具</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
-<body class="home-page">
-  <nav class="home-nav">
-    <a class="home-brand" href="/" aria-label="电商运营 AI Agent MVP 首页">
-      <svg width="26" height="26" viewBox="0 0 256 256" fill="#ffffff" aria-hidden="true">
-        <path d="M 256 256 L 128 256 L 0 128 L 128 128 Z M 256 128 L 128 128 L 0 0 L 128 0 Z"></path>
-      </svg>
-      <span>电商运营 AI Agent</span>
+<body class="conversion-home">
+  <nav class="conversion-nav">
+    <a class="conversion-brand" href="/" aria-label="AI 单品推广成交工具首页">
+      <span class="brand-mark">AI</span>
+      <span>单品推广成交工具</span>
     </a>
-
-    <div class="home-nav-pill" aria-label="首页导航">
-      <a class="active" href="/">首页</a>
-      <a href="/agent">智能体工作台</a>
-      <a href="/agent?scenario=after_sales">客服售后</a>
-      <a href="/agent?scenario=listing">商品上架</a>
-      <a href="/agent?scenario=conversion">推广成交</a>
-      <a href="/agent?scenario=ads">广告优化</a>
+    <div class="conversion-nav-links" aria-label="首页导航">
+      <a href="#generator">成交生成器</a>
+      <a href="#outputs">生成内容</a>
+      <a href="#support">辅助能力</a>
+      <a href="/login">登录</a>
     </div>
-
-    <a class="home-signup" href="/login">免费体验</a>
-    <a class="home-menu" href="/agent" aria-label="进入 Demo">
-      <span></span>
-      <span></span>
-    </a>
+    <a class="nav-primary" href="/login">免费体验</a>
   </nav>
 
-  <main class="home-root" style="font-family: 'Inter', sans-serif;">
-    <section class="home-hero" aria-label="电商运营 AI Agent MVP 首页">
-      <div class="home-base-image hero-zoom" aria-hidden="true"></div>
-      <canvas id="spotlightCanvas" class="spotlight-canvas" aria-hidden="true"></canvas>
-      <div id="revealLayer" class="home-reveal-layer" aria-hidden="true"></div>
-      <div class="home-vignette" aria-hidden="true"></div>
-
-      <header class="home-heading">
-        <h1>
-          <span class="font-playfair hero-anim hero-reveal home-title-line accent" style="animation-delay: 0.25s;">电商运营</span>
-          <span class="hero-anim hero-reveal home-title-line" style="animation-delay: 0.42s;">AI Agent MVP</span>
-        </h1>
-      </header>
-
-      <div class="home-copy-left hero-anim hero-fade" style="animation-delay: 0.7s;">
-        <p>给电商老板和运营看的 AI 工作台：从选品、上架、推广成交到售后复盘，先用演示店铺跑通完整流程。</p>
-      </div>
-
-      <div class="home-copy-right hero-anim hero-fade" style="animation-delay: 0.84s;">
-        <p>注册即带演示店铺。可保存店铺授权占位、按账号隔离 Agent 记录，并对高风险动作生成待复核任务。</p>
-        <div class="home-cta-row">
-          <a class="home-cta" href="/login">体验样例店铺</a>
-          <a class="home-ghost-cta" href="/agent?scenario=conversion">生成成交方案</a>
+  <main>
+    <section class="conversion-hero" id="generator">
+      <div class="hero-copy">
+        <div class="hero-kicker">给中小电商商家的卖货方案生成器</div>
+        <h1>输入商品，生成卖货方案</h1>
+        <p>自动拆卖点、写渠道文案、给落地页和优惠方案，帮商家快速讲清“这个品怎么卖”。</p>
+        <div class="hero-actions">
+          <a class="primary-link" href="/login">用演示店铺生成方案</a>
+          <a class="secondary-link" href="/agent?scenario=conversion">直接看推广 Agent</a>
         </div>
-        <div class="home-proof">
-          <span>支持方向：淘宝 / 抖店 / 拼多多 / 京东 / 微信小店</span>
-          <span>安全状态：token 加密保存，高风险操作人工确认</span>
+        <div class="proof-row">
+          <span>标题卖点</span>
+          <span>短视频脚本</span>
+          <span>小红书/朋友圈文案</span>
+          <span>落地页结构</span>
+          <span>优惠券策略</span>
         </div>
       </div>
 
+      <div class="hero-product-card" aria-label="推广成交方案预览">
+        <div class="product-card-top">
+          <span>商品 P1001</span>
+          <strong>云朵记忆枕</strong>
+        </div>
+        <div class="product-visual">
+          <img
+            src="https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=900&q=80"
+            alt="家居床品商品推广场景"
+          />
+        </div>
+        <div class="conversion-output">
+          <div>
+            <span>主卖点</span>
+            <strong>久坐打工人睡醒脖子不僵</strong>
+          </div>
+          <div>
+            <span>推荐优惠</span>
+            <strong>限时券 20 元 + 两件 9 折</strong>
+          </div>
+          <div>
+            <span>首发渠道</span>
+            <strong>小红书种草 + 朋友圈私域转化</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="conversion-band">
+      <div>
+        <span>生成速度</span>
+        <strong>1 分钟出首版</strong>
+      </div>
+      <div>
+        <span>适合团队</span>
+        <strong>老板 / 运营 / 投手</strong>
+      </div>
+      <div>
+        <span>当前形态</span>
+        <strong>演示店铺 + 可接 API</strong>
+      </div>
+    </section>
+
+    <section class="output-section" id="outputs">
+      <div class="section-heading">
+        <span>商家真正需要的不是聊天，是卖货材料</span>
+        <h2>一次生成推广闭环，不再只给一段泛泛建议</h2>
+      </div>
+      <div class="output-grid">
+        <article>
+          <strong>商品卖点拆解</strong>
+          <p>提炼核心卖点、人群痛点、购买理由和信任背书。</p>
+        </article>
+        <article>
+          <strong>渠道推广文案</strong>
+          <p>按抖音、小红书、朋友圈、私域分别生成不同语气的内容。</p>
+        </article>
+        <article>
+          <strong>单品落地页结构</strong>
+          <p>给出首屏标题、痛点区、证据区、优惠区和 CTA 排布。</p>
+        </article>
+        <article>
+          <strong>优惠与成交策略</strong>
+          <p>生成券包、限时理由、加购动作和人工复核提醒。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="support-section" id="support">
+      <div class="section-heading">
+        <span>其他 Agent 先退到后面</span>
+        <h2>客服、上架、广告不消失，只服务于成交主线</h2>
+      </div>
+      <div class="support-grid">
+        <div><strong>商品上架</strong><span>把标题、主图、详情页准备好，给推广页提供素材。</span></div>
+        <div><strong>广告优化</strong><span>判断预算、关键词、人群和素材是否值得继续放量。</span></div>
+        <div><strong>客服售后</strong><span>把售后高频问题沉淀成信任背书和风险提示。</span></div>
+      </div>
     </section>
   </main>
-
-  <script src="/home.js"></script>
 </body>
 </html>
